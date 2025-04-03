@@ -1,3 +1,4 @@
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
@@ -5,12 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dsa-cracker"
 version = "0.1.0"
-authors = [
-    { name = "Your Name", email = "you@example.com" }
-]
 description = "A DSA progress tracking application"
-readme = "README.md"
-requires-python = ">=3.8"
 dependencies = [
     "streamlit==1.32.0",
     "pandas==2.1.0",
@@ -24,7 +20,4 @@ dependencies = [
     "bcrypt==4.0.1",
     "tzdata==2023.3"
 ]
-
-[project.urls]
-"Homepage" = "https://github.com/himanchalkaushale/DSA-Tracker"
-"Bug Tracker" = "https://github.com/himanchalkaushale/DSA-Tracker/issues"
+requires-python = ">=3.8"
