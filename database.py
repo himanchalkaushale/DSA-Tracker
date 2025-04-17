@@ -188,6 +188,28 @@ def update_question_progress(question_id, completed, user_id=1):
     cursor.close()
     conn.close()
 
+def get_overall_progress(user_id=1):
+    """Get overall progress statistics for a specific user"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+    SELECT 
+        COUNT(*) as total_questions,
+        SUM(CASE WHEN p.completed = TRUE THEN 1 ELSE 0 END) as completed_questions
+    FROM questions q
+    LEFT JOIN progress p ON q.id = p.question_id AND p.user_id = %s
+    ''', (user_id,))
+
+    stats = cursor.fetchone()
+    conn.close()
+
+    return {
+        'total_questions': stats[0],
+        'completed_questions': stats[1],
+        'completion_percentage': (stats[1] / stats[0]) * 100 if stats[0] > 0 else 0
+    }
+
 def export_progress(user_id=1):
     """Export progress data to a JSON file for a specific user"""
     conn = get_db_connection()
