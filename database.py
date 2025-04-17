@@ -188,19 +188,6 @@ def update_question_progress(question_id, completed, user_id=1):
     cursor.close()
     conn.close()
 
-def get_questions_dataframe(user_id=1):
-    """Get questions and their progress as a DataFrame for a specific user"""
-    conn = get_db_connection()
-    query = '''
-    SELECT q.id, q.title, q.leetcode_url, q.gfg_url, q.difficulty, 
-           COALESCE(p.completed, FALSE) as completed
-    FROM questions q
-    LEFT JOIN progress p ON q.id = p.question_id AND p.user_id = %s
-    '''
-    df = pd.read_sql_query(query, conn, params=(user_id,))
-    conn.close()
-    return df
-
 def get_overall_progress(user_id=1):
     """Get overall progress statistics for a specific user"""
     conn = get_db_connection()
