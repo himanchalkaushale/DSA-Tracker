@@ -135,7 +135,6 @@ def save_solution(question_id, solution):
     user_id = st.session_state.user_id
     update_question_solution(question_id, solution, user_id)
     st.success("Solution saved successfully!")
- ```python
 def bookmark_question(question_id):
     """Toggle bookmark status for a question"""
     user_id = st.session_state.user_id
