@@ -11,7 +11,6 @@ from database import (
     get_questions_by_topic,
     get_topic_stats, 
     update_question_progress,
-    get_overall_progress,
     get_questions_dataframe,
     export_progress,
     add_question,
