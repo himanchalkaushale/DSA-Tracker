@@ -4,6 +4,7 @@ import plotly.express as px
 import json
 import os
 import sqlite3
+from database import get_questions_dataframe
 from database import get_overall_progress
 from database import (
     initialize_database, 
