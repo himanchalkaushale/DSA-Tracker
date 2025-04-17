@@ -132,7 +132,21 @@ def load_initial_data():
     cursor.close()
     conn.close()
 
+def get_questions_dataframe(user_id=1):
+    """Get questions and their progress as a DataFrame for a specific user"""
+    conn = get_db_connection()
+    query = '''
+    SELECT q.id, q.title, q.leetcode_url, q.gfg_url, q.difficulty, 
+           COALESCE(p.completed, FALSE) as completed
+    FROM questions q
+    LEFT JOIN progress p ON q.id = p.question_id AND p.user_id = %s
+    '''
+    df = pd.read_sql_query(query, conn, params=(user_id,))
+    conn.close()
+    return df
 
+# Additional functions remain unchanged...
+``` ```python
 def get_topics():
     """Get all topics from the database"""
     conn = get_db_connection()
@@ -246,7 +260,6 @@ def get_topic_stats(topic_id, user_id=1):
 
     return {'total': stats[0], 'completed': stats[1]}
 
-
 def update_question_notes(question_id, notes, user_id=1):
     """Update the notes for a question for a specific user"""
     conn = get_db_connection()
@@ -263,7 +276,6 @@ def update_question_notes(question_id, notes, user_id=1):
     cursor.close()
     conn.close()
 
-
 def update_question_solution(question_id, solution, user_id=1):
     """Update the solution for a question for a specific user"""
     conn = get_db_connection()
@@ -279,7 +291,6 @@ def update_question_solution(question_id, solution, user_id=1):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def toggle_bookmark(question_id, user_id=1):
     """Toggle the bookmark status for a question for a specific user"""
@@ -309,7 +320,6 @@ def toggle_bookmark(question_id, user_id=1):
 
     return new_status
 
-
 def get_bookmarked_questions(user_id=1):
     """Get all bookmarked questions for a specific user"""
     conn = get_db_connection()
@@ -331,7 +341,6 @@ def get_bookmarked_questions(user_id=1):
     conn.close()
 
     return questions
-
 
 def get_detailed_progress_by_difficulty(user_id=1):
     """Get detailed progress breakdown by difficulty level for a specific user"""
@@ -359,7 +368,6 @@ def get_detailed_progress_by_difficulty(user_id=1):
 
     return results
 
-
 def get_all_users():
     """Get all user accounts from the database"""
     conn = get_db_connection()
@@ -377,7 +385,6 @@ def get_all_users():
 
     return users
 
-
 def register_user(username, password, email=None):
     """Register a new user"""
     conn = get_db_connection()
@@ -389,9 +396,9 @@ def register_user(username, password, email=None):
             VALUES (%s, %s, %s, %s)
         ''', (username, password, email, datetime.now()))
 
-        conn.commit()
+        conn.commit ```python
         success = True
-        message = "User registered successfully"
+        message = "User  registered successfully"
     except psycopg2.Error as e:
         conn.rollback()
         success = False
