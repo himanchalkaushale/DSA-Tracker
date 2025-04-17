@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import json
-import os
-import sqlite3
-from database import get_overall_progress
 from database import (
     initialize_database, 
     load_initial_data, 
@@ -20,19 +17,18 @@ from database import (
     delete_question,
     get_detailed_progress_by_difficulty,
     get_progress_by_week,
-    # User authentication and tracking functions
     register_user,
     verify_user,
     get_user_info,
     get_user_progress,
-    # New functions for notes, solutions, and bookmarks
     update_question_notes,
     update_question_solution,
     toggle_bookmark,
     get_bookmarked_questions,
-    # Admin management functions
     get_all_users,
-    add_admin
+    add_admin,
+    get_questions_dataframe,
+    get_overall_progress
 )
 from utils import (
     get_difficulty_color, 
@@ -125,7 +121,6 @@ def update_progress(question_id):
     """Update the progress of a question in the database"""
     checkbox_key = f"question_{question_id}"
     completed = st.session_state[checkbox_key]
-    # Use the current user's ID when updating progress
     user_id = st.session_state.user_id
     update_question_progress(question_id, completed, user_id)
     
@@ -140,7 +135,7 @@ def save_solution(question_id, solution):
     user_id = st.session_state.user_id
     update_question_solution(question_id, solution, user_id)
     st.success("Solution saved successfully!")
-    
+ ```python
 def bookmark_question(question_id):
     """Toggle bookmark status for a question"""
     user_id = st.session_state.user_id
@@ -193,7 +188,6 @@ def user_register(username, password, email=None):
         st.session_state.show_register = False
         st.session_state.register_error = None
         st.success(message + " You can now log in.")
-        # Automatically show login form after successful registration
         st.session_state.show_user_login = True
         st.rerun()
     else:
@@ -222,8 +216,6 @@ def admin_login(username, password):
 def admin_logout():
     st.session_state.admin_logged_in = False
     st.rerun()
-    
-# Theme function has been removed
 
 # Sidebar navigation
 with st.sidebar:
@@ -260,7 +252,7 @@ with st.sidebar:
             # User login form
             if st.session_state.show_user_login:
                 with st.form("user_login_form"):
-                    st.subheader("User Login")
+                    st.subheader("User  Login")
                     user_username = st.text_input("Username")
                     user_password = st.text_input("Password", type="password")
                     
@@ -282,7 +274,7 @@ with st.sidebar:
             
             # User registration form
             if st.session_state.show_register:
-                with st.form("user_register_form"):
+                with st .form("user_register_form"):
                     st.subheader("Register New Account")
                     new_username = st.text_input("Username")
                     new_password = st.text_input("Password", type="password")
@@ -391,7 +383,6 @@ if st.session_state.current_page == 'bookmarks':
                     
                     # Display questions for this topic
                     for question in questions:
-                        # Pass all required functions to format_question_item
                         question['save_notes_fn'] = save_notes
                         question['save_solution_fn'] = save_solution
                         question['bookmark_fn'] = bookmark_question
@@ -405,7 +396,7 @@ if st.session_state.current_page == 'bookmarks':
                     st.error("This feature is not yet implemented.")
 
 elif st.session_state.current_page == 'profile':
-    st.title("User Profile")
+    st.title("User  Profile")
     
     if not st.session_state.user_logged_in:
         st.warning("Please log in to view your profile.")
@@ -413,8 +404,8 @@ elif st.session_state.current_page == 'profile':
             navigate_to_home()
     else:
         user_info = get_user_info(st.session_state.user_id)
-        if not user_info:
-            st.error("User information not found!")
+        if not user _info:
+            st.error("User  information not found!")
         else:
             # User info section
             st.header(f"👤 {user_info['username']}'s Profile")
@@ -526,16 +517,14 @@ elif st.session_state.current_page == 'home':
                     st.markdown(f"**_Progress: {topic_data['completed']}/{topic_data['total']} ({progress_pct}%)_**")
                 
                 if st.button("Start Now", key=f"home_topic_{i}", use_container_width=True):
-                    # Find the topic_id for this topic name
                     for t in topics:
-                        if t['name'] == topic_data['topic']:
+                        if t ['name'] == topic_data['topic']:
                             navigate_to_topic(t['id'])
                             break
                 
                 st.markdown("---")
 
 elif st.session_state.current_page == 'topic':
-    # Get the current topic details
     current_topic_id = st.session_state.current_topic_id
     current_topic = None
     
@@ -551,7 +540,6 @@ elif st.session_state.current_page == 'topic':
     else:
         st.title(f"{current_topic['name']} Questions")
         
-        # Search and filter controls
         col1, col2, col3 = st.columns([3, 2, 1])
         
         with col1:
@@ -575,11 +563,9 @@ elif st.session_state.current_page == 'topic':
                 st.session_state.difficulty_filter = "All"
                 st.rerun()
         
-        # Get topic statistics and show progress
         topic_stats = get_topic_stats(current_topic_id, st.session_state.user_id)
         show_topic_progress(topic_stats)
         
-        # Get questions for this topic with filters applied
         questions = get_questions_by_topic(
             current_topic_id, 
             search_query=search_query if search_query else None,
@@ -587,12 +573,10 @@ elif st.session_state.current_page == 'topic':
             user_id=st.session_state.user_id
         )
         
-        # Display questions
         if not questions:
             st.info("No questions found with the current filters.")
         else:
             for question in questions:
-                # Pass all required functions to format_question_item
                 question['save_notes_fn'] = save_notes
                 question['save_solution_fn'] = save_solution
                 question['bookmark_fn'] = bookmark_question
@@ -601,31 +585,24 @@ elif st.session_state.current_page == 'topic':
 elif st.session_state.current_page == 'dashboard':
     st.title("Progress Dashboard")
     
-    # Get overall progress data for the current user
     progress_data = get_overall_progress(st.session_state.user_id)
     
-    # Calculate total progress
     total_questions = sum(item['total'] for item in progress_data)
     total_completed = sum(item['completed'] for item in progress_data)
     
     if total_questions > 0:
         overall_percent = int((total_completed / total_questions) * 100)
         
-        # Display overall progress
         st.markdown(f"## Overall Progress: {overall_percent}%")
         st.progress(overall_percent / 100)
         st.markdown(f"### {total_completed} out of {total_questions} questions completed")
         
-        # Create a DataFrame for visualization
         df = pd.DataFrame(progress_data)
-        
-        # Add percentage column
         df['percentage'] = df.apply(
             lambda row: 0 if row['total'] == 0 else (row['completed'] / row['total']) * 100, 
             axis=1
         )
         
-        # Create charts
         col1, col2 = st.columns(2)
         
         with col1:
@@ -656,29 +633,23 @@ elif st.session_state.current_page == 'dashboard':
             fig.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
         
-        # Add detailed progress by difficulty
         st.subheader("Progress by Difficulty")
         diff_data = get_detailed_progress_by_difficulty(st.session_state.user_id)
         
-        # Convert to dataframe for display
         df_diff = pd.DataFrame(diff_data)
-        
-        # Add percentage column
         df_diff['percentage'] = df_diff.apply(
             lambda row: 0 if row['total'] == 0 else (row['completed'] / row['total']) * 100, 
             axis=1
         )
         
-        # Create a three-column layout for difficulty stats
         col1, col2, col3 = st.columns(3)
         
-        # Display statistics by difficulty
         for i, diff in enumerate(['Easy', 'Medium', 'Hard']):
             diff_row = df_diff[df_diff['difficulty'] == diff]
             if not diff_row.empty:
                 col = col1 if i == 0 else col2 if i == 1 else col3
                 with col:
-                    diff_total = int(diff_row['total'].values[0])
+ diff_total = int(diff_row['total'].values[0])
                     diff_completed = int(diff_row['completed'].values[0])
                     diff_pct = 0 if diff_total == 0 else int((diff_completed / diff_total) * 100)
                     
@@ -689,16 +660,13 @@ elif st.session_state.current_page == 'dashboard':
                     )
                     st.progress(diff_pct / 100)
         
-        # Add weekly progress chart
         st.subheader("Weekly Progress")
         weekly_data = get_progress_by_week(st.session_state.user_id)
         df_weekly = pd.DataFrame(weekly_data)
         
-        # Create tabs for different visualizations
         weekly_tab1, weekly_tab2 = st.tabs(["Total Progress", "Progress by Difficulty"])
         
         with weekly_tab1:
-            # Total progress line chart
             fig = px.line(
                 df_weekly,
                 x='week',
@@ -717,7 +685,6 @@ elif st.session_state.current_page == 'dashboard':
             st.plotly_chart(fig, use_container_width=True)
             
         with weekly_tab2:
-            # Stacked area chart by difficulty
             fig = px.area(
                 df_weekly,
                 x='week',
@@ -729,9 +696,9 @@ elif st.session_state.current_page == 'dashboard':
                     'variable': 'Difficulty'
                 },
                 color_discrete_map={
-                    'easy': '#48BB78',    # Green for easy
-                    'medium': '#ECC94B',  # Yellow for medium
-                    'hard': '#F56565'     # Red for hard
+                    'easy': '#48BB78',    
+                    'medium': '#ECC94B',  
+                    'hard': '#F56565'     
                 }
             )
             fig.update_layout(
@@ -745,13 +712,11 @@ elif st.session_state.current_page == 'dashboard':
                     x=1
                 )
             )
-            # Update names in the legend
             newnames = {'easy': 'Easy', 'medium': 'Medium', 'hard': 'Hard'}
-            fig.for_each_trace(lambda t: t.update(name = newnames[t.name]))
+            fig.for_each_trace(lambda t: t.update(name=newnames[t.name]))
             
             st.plotly_chart(fig, use_container_width=True)
             
-            # Display the weekly data in a table
             st.markdown("### Weekly Breakdown")
             df_display = df_weekly.copy()
             df_display = df_display.rename(columns={
@@ -766,12 +731,10 @@ elif st.session_state.current_page == 'dashboard':
                 use_container_width=True
             )
         
-        # Export progress button
         if st.button("Export Progress Data"):
             export_file = export_progress(st.session_state.user_id)
             st.success(f"Progress data exported to {export_file}")
             
-            # Create a download button for the exported file
             with open(export_file, 'r') as f:
                 export_data = f.read()
             st.download_button(
@@ -781,16 +744,13 @@ elif st.session_state.current_page == 'dashboard':
                 mime="application/json"
             )
         
-        # Detailed progress table
         st.subheader("Detailed Progress")
         df_detailed = get_questions_dataframe(st.session_state.user_id)
         
-        # Format the completed column
         df_detailed['status'] = df_detailed['completed'].apply(
             lambda x: "✅ Completed" if x else "❌ Pending"
         )
         
-        # Display as a table
         st.dataframe(
             df_detailed[['topic', 'title', 'difficulty', 'status']],
             use_container_width=True,
@@ -807,24 +767,20 @@ elif st.session_state.current_page == 'dashboard':
 elif st.session_state.current_page == 'manage':
     st.title("Manage Questions")
     
-    # Check if user is authenticated as admin
     if not st.session_state.admin_logged_in:
         st.warning("This page is restricted to administrators only. Please log in as an admin using the sidebar.")
         if st.button("Back to Home"):
             navigate_to_home()
     else:
-        # Get list of topics for select boxes
         topics = get_topics()
         topic_names = [topic['name'] for topic in topics]
         topic_ids = [topic['id'] for topic in topics]
         
-        # Create tabs for different ways to manage questions
         tab1, tab2, tab3, tab4 = st.tabs(["Add Single Question", "Batch Add Questions", "Delete Questions", "Admin Settings"])
         
         with tab1:
             st.header("Add Single Question")
             
-            # Form for adding a single question
             with st.form("add_question_form"):
                 title = st.text_input("Question Title", placeholder="e.g., Find the maximum subarray sum")
                 
@@ -849,7 +805,6 @@ elif st.session_state.current_page == 'manage':
                         st.error("Question title is required!")
                     else:
                         try:
-                            # Add the question to the database
                             question_id = add_question(title, leetcode_url, gfg_url, difficulty, topic_id)
                             st.success(f"Question '{title}' added successfully with ID {question_id}!")
                         except Exception as e:
@@ -858,7 +813,6 @@ elif st.session_state.current_page == 'manage':
         with tab2:
             st.header("Batch Add Questions")
             
-            # Select a topic for all questions in this batch
             topic_index = st.selectbox(
                 "Select Topic for All Questions",
                 range(len(topic_names)),
@@ -867,7 +821,6 @@ elif st.session_state.current_page == 'manage':
             )
             selected_topic_id = topic_ids[topic_index]
             
-            # JSON input area for batch questions
             st.markdown("""
             ### Batch Questions Format
             
@@ -906,7 +859,6 @@ elif st.session_state.current_page == 'manage':
                     st.error("Please enter question data in JSON format!")
                 else:
                     try:
-                        # Parse JSON input
                         questions_data = json.loads(json_input)
                         
                         if not isinstance(questions_data, list):
@@ -914,7 +866,6 @@ elif st.session_state.current_page == 'manage':
                         elif len(questions_data) == 0:
                             st.warning("No questions found in JSON input!")
                         else:
-                            # Validate each question
                             valid = True
                             for i, q in enumerate(questions_data):
                                 if not isinstance(q, dict):
@@ -931,10 +882,8 @@ elif st.session_state.current_page == 'manage':
                                     break
                             
                             if valid:
-                                # Add questions to database
                                 count = add_questions_batch(questions_data, selected_topic_id)
                                 st.success(f"Successfully added {count} questions to '{topic_names[topic_index]}'!")
-                                # Clear the text area
                                 st.session_state.batch_questions = "[]"
                                 st.rerun()
                     
@@ -947,30 +896,24 @@ elif st.session_state.current_page == 'manage':
             st.header("Delete Questions")
             st.warning("⚠️ Warning: Deleting questions will permanently remove them from the database. This action cannot be undone.")
             
-            # Get all questions for display and selection
-            # For admin, show all questions regardless of user
             df_questions = get_questions_dataframe()
             
             if df_questions.empty:
                 st.info("No questions available in the database.")
             else:
-                # Add a selection column to the dataframe
                 df_questions['Select'] = False
                 
-                # Create a filter for topics
                 topic_filter = st.selectbox(
                     "Filter by Topic",
                     ["All Topics"] + sorted(df_questions['topic'].unique().tolist()),
                     key="delete_topic_filter"
                 )
                 
-                # Apply the filter
                 if topic_filter != "All Topics":
                     filtered_df = df_questions[df_questions['topic'] == topic_filter]
-                else:
+ else:
                     filtered_df = df_questions
                 
-                # Display the questions with a selection box
                 selected_df = st.data_editor(
                     filtered_df[['id', 'topic', 'title', 'difficulty', 'Select']],
                     column_config={
@@ -985,17 +928,14 @@ elif st.session_state.current_page == 'manage':
                     key="question_selection"
                 )
                 
-                # Get the IDs of selected questions
                 selected_ids = selected_df[selected_df['Select']]['id'].tolist()
                 
-                # Display the delete button with confirmation
                 col1, col2 = st.columns([3, 1])
                 with col2:
                     if len(selected_ids) > 0:
                         if st.button("Delete Selected", type="primary", use_container_width=True):
                             st.session_state.confirm_delete = True
                 
-                # Show confirmation dialog
                 if st.session_state.get('confirm_delete', False):
                     st.warning(f"Are you sure you want to delete {len(selected_ids)} selected questions? This action cannot be undone.")
                     col1, col2 = st.columns(2)
@@ -1010,47 +950,40 @@ elif st.session_state.current_page == 'manage':
                             success_count = 0
                             error_count = 0
                             
-                            # Attempt to delete each selected question
                             for q_id in selected_ids:
                                 if delete_question(q_id):
                                     success_count += 1
                                 else:
                                     error_count += 1
                             
-                            # Display the results
                             if success_count > 0:
                                 st.success(f"Successfully deleted {success_count} questions.")
                             
                             if error_count > 0:
                                 st.error(f"Failed to delete {error_count} questions.")
                             
-                            # Reset the confirmation state
                             st.session_state.confirm_delete = False
                             st.rerun()
                             
         with tab4:
             st.header("Admin Settings")
             
-            # Create subtabs for different admin settings
             admin_tab1, admin_tab2 = st.tabs(["View User Accounts", "Admin Credentials"])
             
             with admin_tab1:
-                st.subheader("User Accounts")
+                st.subheader("User  Accounts")
                 
-                # Get all user accounts
                 users = get_all_users()
                 
                 if not users:
                     st.info("No user accounts found in the database.")
                 else:
-                    # Convert to DataFrame for display
                     users_df = pd.DataFrame(users)
                     
-                    # Format the data for display
                     st.dataframe(
                         users_df,
                         column_config={
-                            "id": "User ID",
+                            "id": "User  ID",
                             "username": "Username",
                             "email": "Email",
                             "created_at": "Registered On",
@@ -1064,7 +997,6 @@ elif st.session_state.current_page == 'manage':
             with admin_tab2:
                 st.subheader("Admin Credentials")
                 
-                # Form to change admin password
                 with st.form("change_admin_password_form"):
                     st.write("Change Admin Password")
                     current_username = st.text_input("Admin Username")
@@ -1078,13 +1010,11 @@ elif st.session_state.current_page == 'manage':
                         elif new_password != confirm_password:
                             st.error("New passwords do not match!")
                         else:
-                            # Attempt to change the password
                             if change_admin_password(current_username, current_password, new_password):
                                 st.success(f"Password changed successfully for admin '{current_username}'!")
                             else:
                                 st.error("Failed to change password. Check your current username and password.")
                 
-                # Form to add new admin
                 with st.form("add_admin_form"):
                     st.write("Add New Admin")
                     new_admin_username = st.text_input("New Admin Username")
@@ -1098,7 +1028,6 @@ elif st.session_state.current_page == 'manage':
                         elif new_admin_password != confirm_admin_password:
                             st.error("Passwords do not match!")
                         else:
-                            # Attempt to add the new admin
                             success, message = add_admin(new_admin_username, new_admin_password, update_if_exists)
                             if success:
                                 st.success(message)
